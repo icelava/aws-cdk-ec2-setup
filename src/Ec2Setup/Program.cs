@@ -1,4 +1,5 @@
 ﻿using Amazon.CDK;
+using Amazon.CDK.AWS.EC2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace Ec2Setup
         public static void Main(string[] args)
         {
             var app = new App();
-            new Ec2SetupStack(app, "Ec2SetupStack", new StackProps
+            var setupStack = new Ec2SetupStack(app, "Ec2SetupStack", new StackProps
             {
                 // If you don't specify 'env', this stack will be environment-agnostic.
                 // Account/Region-dependent features and context lookups will not work,
@@ -39,6 +40,18 @@ namespace Ec2Setup
                 // For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
             });
 
+            var vpc = new Vpc(setupStack, "cdk_ec2_vpc", new VpcProps
+            {
+                Cidr = "10.255.252.0/22",
+                NatGateways = 0, // Do not require NAT gateways
+                SubnetConfiguration = new [] {
+                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.PUBLIC, Name = "cdk_ec2_elb_pub" },
+                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.ISOLATED, Name = "cdk_ec2_web_priv" },
+                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.ISOLATED, Name = "cdk_ec2_db_priv" }
+                },
+                MaxAzs = 3
+            });
+     
             app.Synth();
         }
     }
