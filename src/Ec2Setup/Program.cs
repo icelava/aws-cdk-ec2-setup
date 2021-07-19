@@ -39,18 +39,6 @@ namespace Ec2Setup
 
                 // For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
             });
-
-            var vpc = new Vpc(setupStack, "cdk_ec2_vpc", new VpcProps
-            {
-                Cidr = "10.255.252.0/22",
-                NatGateways = 0, // Do not require NAT gateways
-                SubnetConfiguration = new [] {
-                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.PUBLIC, Name = "cdk_ec2_elb_pub" },
-                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.ISOLATED, Name = "cdk_ec2_web_priv" },
-                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.ISOLATED, Name = "cdk_ec2_db_priv" }
-                },
-                MaxAzs = 3
-            });
      
             app.Synth();
         }
