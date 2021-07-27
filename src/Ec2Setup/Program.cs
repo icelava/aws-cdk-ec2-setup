@@ -13,6 +13,7 @@ namespace Ec2Setup
             var app = new App();
             var setupStack = new Ec2SetupStack(app, "Ec2SetupStack", new StackProps
             {
+                #region Account/region
                 // If you don't specify 'env', this stack will be environment-agnostic.
                 // Account/Region-dependent features and context lookups will not work,
                 // but a single synthesized template can be deployed anywhere.
@@ -29,15 +30,17 @@ namespace Ec2Setup
 
                 // Uncomment the next block if you know exactly what Account and Region you
                 // want to deploy the stack to.
-                /*
+                
                 Env = new Amazon.CDK.Environment
                 {
-                    Account = "123456789012",
-                    Region = "us-east-1",
+                    Account = "664224393056",
+                    Region = "ap-southeast-1",
                 }
-                */
+                
 
                 // For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
+
+                #endregion Account/region
             });
      
             app.Synth();
