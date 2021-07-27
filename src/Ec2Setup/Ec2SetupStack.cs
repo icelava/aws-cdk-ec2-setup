@@ -35,6 +35,8 @@ namespace Ec2Setup
             {
                 VpcId = vpc.VpcId,
             });
+            elbRouteTable.Node.AddDependency(vpc.PublicSubnets);
+            elbRouteTable.Node.AddDependency(vpc.IsolatedSubnets);
 
             // Looks like the ultimate name given to the custom RouteTable won't have "CustomRouteTable" in the output template;
             // only goes as far as its parent scope "Ec2SetupStack/cdk_ec2_vpc"; it has to be manually revised.
