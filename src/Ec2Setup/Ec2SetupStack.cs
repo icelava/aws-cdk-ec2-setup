@@ -104,7 +104,7 @@ namespace Ec2Setup
             var pubElbPrivWebResponseRule = 50;
             foreach (var subnet in webSubnets.Subnets)
             {
-                elbNacl.AddEntry("Response_HTTP_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
+                elbNacl.AddEntry("Incoming_HTTP_response_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
                 {
                     RuleNumber = pubElbPrivWebResponseRule,
                     Direction = TrafficDirection.INGRESS,
@@ -117,7 +117,7 @@ namespace Ec2Setup
             }
 
             // Allow HTTP request from Internet.
-            elbNacl.AddEntry("Request_Internet_HTTP", new CommonNetworkAclEntryOptions
+            elbNacl.AddEntry("Incoming_HTTP_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 100,
                 Direction = TrafficDirection.INGRESS,
@@ -131,7 +131,7 @@ namespace Ec2Setup
             var pubElbPrivWebRequestRule = 50;
             foreach (var subnet in webSubnets.Subnets)
             {
-                elbNacl.AddEntry("Request_HTTP_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
+                elbNacl.AddEntry("Outgoing_HTTP_forward_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
                 {
                     RuleNumber = pubElbPrivWebRequestRule,
                     Direction = TrafficDirection.EGRESS,
@@ -143,7 +143,7 @@ namespace Ec2Setup
             }
 
             // Allow HTTP response to Internet.
-            elbNacl.AddEntry("Response_Internet_HTTP", new CommonNetworkAclEntryOptions
+            elbNacl.AddEntry("Outgoing_HTTP_response_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 100,
                 Direction = TrafficDirection.EGRESS,
@@ -170,7 +170,7 @@ namespace Ec2Setup
             var privWebPubElbRequestRule = 50;
             foreach (var subnet in elbSubnets.Subnets)
             {
-                privWebNacl.AddEntry("Incoming_HTTP_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
+                privWebNacl.AddEntry("Incoming_HTTP_forward_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
                 {
                     RuleNumber = privWebPubElbRequestRule,
                     Direction = TrafficDirection.INGRESS,
@@ -193,7 +193,7 @@ namespace Ec2Setup
             });
 
             // Allow HTTP request from Internet; OPTIONAL TEST
-            privWebNacl.AddEntry("Incoming_Internet_HTTP", new CommonNetworkAclEntryOptions
+            privWebNacl.AddEntry("Incoming_HTTP_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 500,
                 Direction = TrafficDirection.INGRESS,
@@ -204,7 +204,7 @@ namespace Ec2Setup
             });
 
             // Allow SSH request from Internet; OPTIONAL TEST
-            privWebNacl.AddEntry("Incoming_Internet_SSH", new CommonNetworkAclEntryOptions
+            privWebNacl.AddEntry("Incoming_SSH_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 501,
                 Direction = TrafficDirection.INGRESS,
@@ -218,7 +218,7 @@ namespace Ec2Setup
             var privWebPubElbResponseRule = 50;
             foreach (var subnet in elbSubnets.Subnets)
             {
-                privWebNacl.AddEntry("Outgoing_HTTP_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
+                privWebNacl.AddEntry("Outgoing_HTTP_response_" + subnet.Node.Id, new CommonNetworkAclEntryOptions
                 {
                     RuleNumber = privWebPubElbResponseRule,
                     Direction = TrafficDirection.EGRESS,
@@ -231,7 +231,7 @@ namespace Ec2Setup
             }
 
             // Allow HTTP/S requests to Internet.
-            privWebNacl.AddEntry("Outgoing_HTTPS_Internet", new CommonNetworkAclEntryOptions
+            privWebNacl.AddEntry("Outgoing_HTTPS_request_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 200,
                 Direction = TrafficDirection.EGRESS,
@@ -239,7 +239,7 @@ namespace Ec2Setup
                 Traffic = AclTraffic.TcpPort(443),
                 RuleAction = Action.ALLOW
             });
-            privWebNacl.AddEntry("Outgoing_HTTP_Internet", new CommonNetworkAclEntryOptions
+            privWebNacl.AddEntry("Outgoing_HTTP_request_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 201,
                 Direction = TrafficDirection.EGRESS,
@@ -248,7 +248,7 @@ namespace Ec2Setup
                 RuleAction = Action.ALLOW
             });
 
-            // Allow (HTTP/SSH) responses back to Internet.
+            // Allow (HTTP/SSH) responses back to Internet; OPTIONAL TEST
             privWebNacl.AddEntry("Outgoing_direct_response_Internet", new CommonNetworkAclEntryOptions
             {
                 RuleNumber = 300,
