@@ -12,6 +12,11 @@ namespace Ec2Setup
         private string publicElbSubnetName = "cdk_ec2_elb_pub";
         private string privateWebSubnetName = "cdk_ec2_web_priv";
 
+        private SecurityGroup pubElbSG;
+        private string pubElbSGName = "pub_elb_sg";
+        private SecurityGroup prviWebSG;
+        private string prviWebSGName = "priv_web_sg";
+
         internal Ec2SetupStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
         {
             this.EstablishNetwork();
@@ -34,7 +39,7 @@ namespace Ec2Setup
 
             this.CustomiseRouteTable();
             this.TightenNacls();
-
+            this.TightenSecurityGroups();
         }
 
         private void CustomiseRouteTable()
@@ -262,6 +267,31 @@ namespace Ec2Setup
 
         }
 
+        private void TightenSecurityGroups()
+        {
+            this.pubElbSG = new SecurityGroup(this.vpc, this.pubElbSGName, new SecurityGroupProps
+            {
+                Vpc = this.vpc,
+                SecurityGroupName = this.pubElbSGName,
+                AllowAllOutbound = false
+            });
+
+            this.prviWebSG = new SecurityGroup(this.vpc, this.prviWebSGName, new SecurityGroupProps
+            {
+                Vpc = this.vpc,
+                SecurityGroupName = this.prviWebSGName,
+                AllowAllOutbound = false
+            });
+
+            this.pubElbSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(80), "Allow HTTP requests from Internet.");
+            this.pubElbSG.AddEgressRule(this.prviWebSG,Port.Tcp(80), "Forward HTTP requests to internal web servers.");
+
+            this.prviWebSG.AddIngressRule(this.pubElbSG, Port.Tcp(80), "Allow HTTP forwarding from load balancers.");
+            this.prviWebSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(80), "Allow direct HTTP requests from Internet; OPTIONAL TEST");
+            this.prviWebSG.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(22), "Allow SSH requests from Internet; OPTIONAL TEST");
+            this.prviWebSG.AddEgressRule(Peer.AnyIpv4(), Port.Tcp(443), "Allow HTTPS requests to external web servers.");
+            this.prviWebSG.AddEgressRule(Peer.AnyIpv4(), Port.Tcp(80), "Allow HTTP requests to external web servers.");
+        }
         private void EstablishEC2()
         {
 
