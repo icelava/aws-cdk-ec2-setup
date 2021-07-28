@@ -5,6 +5,7 @@ namespace Ec2Setup
 {
     public class Ec2SetupStack : Stack
     {
+        private Vpc vpc;
         private string vpcCidr = "10.255.248.0/21";
         private string internetCidr = "0.0.0.0/0";
 
@@ -15,7 +16,7 @@ namespace Ec2Setup
 
         private void EstablishNetwork()
         {
-            var vpc = new Vpc(this, "cdk_ec2_vpc",
+            this.vpc = new Vpc(this, "cdk_ec2_vpc",
             new VpcProps
             {
                 Cidr = vpcCidr,
@@ -28,12 +29,17 @@ namespace Ec2Setup
                 }
             });
 
+            this.CustomiseRouteTable();
+        }
+
+        private void CustomiseRouteTable()
+        {
             // Custom route table and routes.
             var customRtName = "CustomRouteTable";
             var elbRouteTable = new CfnRouteTable(vpc, customRtName,
             new CfnRouteTableProps
             {
-                VpcId = vpc.VpcId,
+                VpcId = this.vpc.VpcId,
             });
             elbRouteTable.Node.AddDependency(vpc.PublicSubnets);
             elbRouteTable.Node.AddDependency(vpc.IsolatedSubnets);
@@ -49,12 +55,12 @@ namespace Ec2Setup
             {
                 RouteTableId = elbRouteTable.Ref,
                 DestinationCidrBlock = internetCidr,
-                GatewayId = vpc.InternetGatewayId
+                GatewayId = this.vpc.InternetGatewayId
             });
             internetRoute.Node.AddDependency(elbRouteTable);
 
-            this.ReAssociateRouteTable(vpc, vpc.PublicSubnets, elbRouteTable);
-            this.ReAssociateRouteTable(vpc, vpc.IsolatedSubnets, elbRouteTable);
+            this.ReAssociateRouteTable(this.vpc, this.vpc.PublicSubnets, elbRouteTable);
+            this.ReAssociateRouteTable(this.vpc, this.vpc.IsolatedSubnets, elbRouteTable);
         }
 
         private void ReAssociateRouteTable(Construct scope, ISubnet[] subnets, CfnRouteTable routeTable)
