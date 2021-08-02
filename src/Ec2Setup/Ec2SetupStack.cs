@@ -339,7 +339,10 @@ namespace Ec2Setup
                 AssociatePublicIpAddress = true,
                 SecurityGroup = this.prviWebSG,
                 InstanceType = InstanceType.Of(InstanceClass.BURSTABLE2, InstanceSize.MICRO),
-                MachineImage = new AmazonLinuxImage(),
+                MachineImage = new AmazonLinuxImage
+                ( new AmazonLinuxImageProps{
+                    Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
+                }),
                 KeyName = sshKey,
                 DesiredCapacity = 2,
                 MinCapacity = 2,
