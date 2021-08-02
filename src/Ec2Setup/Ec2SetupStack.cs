@@ -1,5 +1,11 @@
 using Amazon.CDK;
+using Amazon.CDK.AWS.AutoScaling;
 using Amazon.CDK.AWS.EC2;
+using Amazon.CDK.AWS.ElasticLoadBalancingV2;
+using System;
+using System.IO;
+
+
 
 namespace Ec2Setup
 {
@@ -17,9 +23,12 @@ namespace Ec2Setup
         private SecurityGroup prviWebSG;
         private string prviWebSGName = "priv_web_sg";
 
+        private string sshKey = "ec2_exps";
+
         internal Ec2SetupStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
         {
             this.EstablishNetwork();
+            this.EstablishEC2();
         }
 
         private void EstablishNetwork()
@@ -58,7 +67,6 @@ namespace Ec2Setup
             // only goes as far as its parent scope "Ec2SetupStack/cdk_ec2_vpc"; it has to be manually revised.
             var revisedName = vpc.Stack.StackName + "/" + vpc.Node.Id + "/" + customRtName;
             Amazon.CDK.Tags.Of(elbRouteTable).Add("Name", revisedName);
-            //elbRouteTable.Tags.SetTag("Name", customRtName);
 
             var internetRoute = new CfnRoute(elbRouteTable, "InternetRoute",
             new CfnRouteProps
@@ -115,7 +123,7 @@ namespace Ec2Setup
                     Direction = TrafficDirection.INGRESS,
                     Cidr = AclCidr.Ipv4(subnet.Ipv4CidrBlock),
                     Traffic = ephemeralPortRange,
-                    RuleAction = Action.ALLOW
+                    RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
                 });
                 pubElbPrivWebResponseRule++;
@@ -128,7 +136,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.INGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = AclTraffic.TcpPort(80),
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
             });
 
@@ -142,7 +150,7 @@ namespace Ec2Setup
                     Direction = TrafficDirection.EGRESS,
                     Cidr = AclCidr.Ipv4(subnet.Ipv4CidrBlock),
                     Traffic = AclTraffic.TcpPort(80),
-                    RuleAction = Action.ALLOW
+                    RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
                 });
                 pubElbPrivWebRequestRule++;
             }
@@ -154,7 +162,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.EGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = ephemeralPortRange,
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
             });
 
@@ -181,7 +189,7 @@ namespace Ec2Setup
                     Direction = TrafficDirection.INGRESS,
                     Cidr = AclCidr.Ipv4(subnet.Ipv4CidrBlock),
                     Traffic = AclTraffic.TcpPort(80),
-                    RuleAction = Action.ALLOW
+                    RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
                 });
                 privWebPubElbRequestRule++;
@@ -194,7 +202,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.INGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = ephemeralPortRange,
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
             });
 
             // Allow HTTP request from Internet; OPTIONAL TEST
@@ -204,7 +212,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.INGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = AclTraffic.TcpPort(80),
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
             });
 
@@ -215,7 +223,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.INGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = AclTraffic.TcpPort(22),
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
             });
 
@@ -229,7 +237,7 @@ namespace Ec2Setup
                     Direction = TrafficDirection.EGRESS,
                     Cidr = AclCidr.Ipv4(subnet.Ipv4CidrBlock),
                     Traffic = ephemeralPortRange,
-                    RuleAction = Action.ALLOW
+                    RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
 
                 });
                 privWebPubElbResponseRule++;
@@ -242,7 +250,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.EGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = AclTraffic.TcpPort(443),
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
             });
             privWebNacl.AddEntry("Outgoing_HTTP_request_Internet", new CommonNetworkAclEntryOptions
             {
@@ -250,7 +258,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.EGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = AclTraffic.TcpPort(80),
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
             });
 
             // Allow (HTTP/SSH) responses back to Internet; OPTIONAL TEST
@@ -260,7 +268,7 @@ namespace Ec2Setup
                 Direction = TrafficDirection.EGRESS,
                 Cidr = AclCidr.AnyIpv4(),
                 Traffic = ephemeralPortRange,
-                RuleAction = Action.ALLOW
+                RuleAction = Amazon.CDK.AWS.EC2.Action.ALLOW
             });
 
             #endregion Private web
@@ -294,7 +302,59 @@ namespace Ec2Setup
         }
         private void EstablishEC2()
         {
+            var userDataScriptFile = "EC2 user data script.sh";
+            var elbName = "PublicWebLoadBalancer";
+            var elb = new ApplicationLoadBalancer(this, elbName, new ApplicationLoadBalancerProps
+            {
+                LoadBalancerName = elbName,
+                Vpc = this.vpc,
+                VpcSubnets = new SubnetSelection {SubnetGroupName = this.publicElbSubnetName},
+                SecurityGroup = this.pubElbSG,
+                InternetFacing = true
+            });
 
+            var appListener = elb.AddListener("Listener", new BaseApplicationListenerProps
+            {
+                Port = 80,
+                Protocol = ApplicationProtocol.HTTP,
+                Open = true
+            });
+            
+            // User data for Launch Configuration.
+            var userDataScriptPath = AppDomain.CurrentDomain.BaseDirectory + "/" + userDataScriptFile;
+            if (!File.Exists(userDataScriptPath))
+            {
+                throw new FileNotFoundException("User Data script file for EC2 Launch Configuration not found in output directory: " + userDataScriptPath);
+            }
+
+			//var launchUserData = new MultipartUserData();
+			//launchUserData.AddCommands(File.ReadAllLines(userDataScriptPath));
+
+			var asgName = "AutoScalingWebServers";
+            var asg = new AutoScalingGroup(this, asgName, new AutoScalingGroupProps
+            {
+                AutoScalingGroupName = asgName,
+                Vpc = this.vpc,
+                VpcSubnets = new SubnetSelection {SubnetGroupName = this.privateWebSubnetName},
+                SecurityGroup = this.prviWebSG,
+                InstanceType = InstanceType.Of(InstanceClass.BURSTABLE2, InstanceSize.MICRO),
+                MachineImage = new AmazonLinuxImage(),
+                KeyName = sshKey,
+                DesiredCapacity = 2,
+                MinCapacity = 2,
+                MaxCapacity = 2
+            });
+            asg.AddUserData(File.ReadAllLines(userDataScriptPath));
+
+            appListener.AddTargets("WebServers", new AddApplicationTargetsProps
+            {
+                Targets = new [] {asg},
+                Port = 80,
+                HealthCheck = new Amazon.CDK.AWS.ElasticLoadBalancingV2.HealthCheck {
+                    Path = "/index.html",
+                    Interval = Duration.Minutes(2)
+                }
+            });
         }
     }
 }
