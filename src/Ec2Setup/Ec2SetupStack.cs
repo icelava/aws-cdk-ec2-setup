@@ -42,7 +42,7 @@ namespace Ec2Setup
 
                 SubnetConfiguration = new [] {
                     new SubnetConfiguration { CidrMask = 28, SubnetType = SubnetType.PUBLIC, Name =  this.publicElbSubnetName},
-                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.ISOLATED, Name =  this.privateWebSubnetName}
+                    new SubnetConfiguration { CidrMask = 26, SubnetType = SubnetType.PUBLIC, Name =  this.privateWebSubnetName}
                 }
             });
 
@@ -336,13 +336,19 @@ namespace Ec2Setup
                 AutoScalingGroupName = asgName,
                 Vpc = this.vpc,
                 VpcSubnets = new SubnetSelection {SubnetGroupName = this.privateWebSubnetName},
+                AssociatePublicIpAddress = true,
                 SecurityGroup = this.prviWebSG,
                 InstanceType = InstanceType.Of(InstanceClass.BURSTABLE2, InstanceSize.MICRO),
                 MachineImage = new AmazonLinuxImage(),
                 KeyName = sshKey,
                 DesiredCapacity = 2,
                 MinCapacity = 2,
-                MaxCapacity = 2
+                MaxCapacity = 2,
+                UpdatePolicy = UpdatePolicy.RollingUpdate(new RollingUpdateOptions
+                {
+                    MinInstancesInService = 1,
+                    MaxBatchSize = 2
+                })
             });
             asg.AddUserData(File.ReadAllLines(userDataScriptPath));
 
