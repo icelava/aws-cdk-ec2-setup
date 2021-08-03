@@ -14,6 +14,7 @@ namespace Ec2Setup
         private Vpc vpc;
         private string vpcCidr = "10.255.248.0/21";
         private string internetCidr = "0.0.0.0/0";
+        private double maxAvailabilityZones = 3;
 
         private string publicElbSubnetName = "cdk_ec2_elb_pub";
         private string privateWebSubnetName = "cdk_ec2_web_priv";
@@ -37,7 +38,7 @@ namespace Ec2Setup
             new VpcProps
             {
                 Cidr = vpcCidr,
-                MaxAzs = 2,
+                MaxAzs = maxAvailabilityZones,
                 NatGateways = 0, // Do not require NAT gateways.
 
                 SubnetConfiguration = new [] {
@@ -344,9 +345,9 @@ namespace Ec2Setup
                     Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
                 }),
                 KeyName = sshKey,
-                DesiredCapacity = 2,
-                MinCapacity = 2,
-                MaxCapacity = 2,
+                DesiredCapacity = 3,
+                MinCapacity = 3,
+                MaxCapacity = 3,
                 UpdatePolicy = UpdatePolicy.RollingUpdate(new RollingUpdateOptions
                 {
                     MinInstancesInService = 1,
