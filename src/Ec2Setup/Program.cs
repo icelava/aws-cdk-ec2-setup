@@ -11,7 +11,7 @@ namespace Ec2Setup
         public static void Main(string[] args)
         {
             var app = new App();
-            var setupStack = new Ec2SetupStack(app, "Ec2SetupStack", new StackProps
+            var setupStack = new Ec2SetupStack(app, "CdkEc2SetupStack", new StackProps
             {
                 #region Account/region
                 // If you don't specify 'env', this stack will be environment-agnostic.
