@@ -2,6 +2,8 @@ using Amazon.CDK;
 using Amazon.CDK.AWS.AutoScaling;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.ElasticLoadBalancingV2;
+using Amazon.CDK.AWS.IAM;
+using Amazon.CDK.AWS.SSM;
 using System;
 using System.IO;
 
@@ -25,12 +27,16 @@ namespace Ec2Setup
 		private string prviWebSGName = "cdk_ec2_web_priv_sg";
 
 		private string sshKey = "ec2_exps";
+		private string ec2RoleName = "cdk_ec2_role";
+		private Role ec2InstanceRole;
 
 		private AutoScalingGroup webServersAsg;
 
 		internal Ec2SetupStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
 		{
 			this.EstablishNetwork();
+			this.EstablishIAM();
+			this.EstablishSystemsManager();
 			this.EstablishEC2();
 		}
 
@@ -307,7 +313,7 @@ namespace Ec2Setup
 			this.prviWebSG.AddEgressRule(Peer.AnyIpv4(), Port.Tcp(80), "Allow HTTP requests to external web servers.");
 		}
 
-		private string[] LoadFileText (string fileName, string fileDescription)
+		private string[] LoadTextFile (string fileName, string fileDescription)
 		{
 			var filetPath = AppDomain.CurrentDomain.BaseDirectory + "/" + fileName;
 			if (!File.Exists(filetPath))
@@ -318,6 +324,34 @@ namespace Ec2Setup
 			return File.ReadAllLines(filetPath);
 		}
 
+		private void EstablishIAM()
+		{
+			this.ec2InstanceRole = new Role(this, this.ec2RoleName, new RoleProps
+			{
+				AssumedBy = new ServicePrincipal("ec2.amazonaws.com"),
+				Description = "Role for CDK EC2 demo instances."
+			});
+
+			this.ec2InstanceRole.AddManagedPolicy(ManagedPolicy.FromAwsManagedPolicyName("CloudWatchAgentServerPolicy"));
+			this.ec2InstanceRole.AddManagedPolicy(ManagedPolicy.FromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"));
+		}
+
+		private void EstablishSystemsManager()
+		{
+			var cwuaConfig = this.LoadTextFile("CWUA_config.json", "CloudWatch Unified Agent configuration");
+			// CWUA config files in SSM Parameter store must begin as "AmazonCloudWatch-".
+			var ssmParam = new StringParameter(this, "AmazonCloudWatch-cdk-ec2-demo-config", new StringParameterProps
+			{
+				ParameterName = "AmazonCloudWatch-cdk-ec2-demo-config",
+				SimpleName = true,
+				Description = "Trimmed configuration to report memory usage.",
+				StringValue = string.Join("\n", cwuaConfig),
+				Tier = ParameterTier.STANDARD
+			});
+
+			ssmParam.GrantRead(this.ec2InstanceRole);
+		}
+
 		private void EstablishEC2()
 		{
 			this.EstablishWebAsg();
@@ -326,7 +360,7 @@ namespace Ec2Setup
 
 		private string[] LoadUserDataScript()
 		{
-			return this.LoadFileText("EC2_user_data_script.sh", "User Data script file for EC2 Launch Configuration");
+			return this.LoadTextFile("EC2_user_data_script.sh", "User Data script file for EC2 Launch Configuration");
 		}
 
 		private void EstablishWebAsg()
@@ -347,6 +381,7 @@ namespace Ec2Setup
 					 Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
 				 }),
 				KeyName = sshKey,
+				Role = this.ec2InstanceRole,
 				DesiredCapacity = 1,
 				MinCapacity = 1,
 				MaxCapacity = 3,
