@@ -1,3 +1,5 @@
+# For unknown reason, the bash shebang is not necessary.
+
 yum update -y
 yum install httpd -y
 systemctl start httpd.service

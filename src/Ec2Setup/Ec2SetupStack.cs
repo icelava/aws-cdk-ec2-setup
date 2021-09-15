@@ -314,7 +314,7 @@ namespace Ec2Setup
 
 		private string[] LoadUserDataScript()
 		{
-			var userDataScriptFile = "EC2 user data script.sh";
+			var userDataScriptFile = "EC2_user_data_script.sh";
 			var userDataScriptPath = AppDomain.CurrentDomain.BaseDirectory + "/" + userDataScriptFile;
 			if (!File.Exists(userDataScriptPath))
 			{

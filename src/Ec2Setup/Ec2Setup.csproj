@@ -6,10 +6,7 @@
     <RollForward>Major</RollForward>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="EC2 user data script.sh" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="EC2 user data script.sh">
+    <Content Include="EC2_user_data_script.sh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
