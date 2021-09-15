@@ -1,4 +1,4 @@
-# For unknown reason, the bash shebang is not necessary.
+# For unknown reason, the bash shebang is not necessary when adding via CDK.
 
 yum update -y
 yum install httpd -y
