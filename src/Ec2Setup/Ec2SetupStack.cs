@@ -306,6 +306,18 @@ namespace Ec2Setup
 			this.prviWebSG.AddEgressRule(Peer.AnyIpv4(), Port.Tcp(443), "Allow HTTPS requests to external web servers.");
 			this.prviWebSG.AddEgressRule(Peer.AnyIpv4(), Port.Tcp(80), "Allow HTTP requests to external web servers.");
 		}
+
+		private string[] LoadFileText (string fileName, string fileDescription)
+		{
+			var filetPath = AppDomain.CurrentDomain.BaseDirectory + "/" + fileName;
+			if (!File.Exists(filetPath))
+			{
+				throw new FileNotFoundException(fileDescription + " not found in output directory: " + filetPath);
+			}
+
+			return File.ReadAllLines(filetPath);
+		}
+
 		private void EstablishEC2()
 		{
 			this.EstablishWebAsg();
@@ -314,14 +326,7 @@ namespace Ec2Setup
 
 		private string[] LoadUserDataScript()
 		{
-			var userDataScriptFile = "EC2_user_data_script.sh";
-			var userDataScriptPath = AppDomain.CurrentDomain.BaseDirectory + "/" + userDataScriptFile;
-			if (!File.Exists(userDataScriptPath))
-			{
-				throw new FileNotFoundException("User Data script file for EC2 Launch Configuration not found in output directory: " + userDataScriptPath);
-			}
-
-			return File.ReadAllLines(userDataScriptPath);
+			return this.LoadFileText("EC2_user_data_script.sh", "User Data script file for EC2 Launch Configuration");
 		}
 
 		private void EstablishWebAsg()
