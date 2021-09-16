@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ec2Setup", "Ec2Setup\Ec2Setup.csproj", "{50E7FA32-5BCE-4B11-86CB-E7890EFEAC63}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CdkEc2Setup", "CdkEc2Setup\CdkEc2Setup.csproj", "{50E7FA32-5BCE-4B11-86CB-E7890EFEAC63}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
