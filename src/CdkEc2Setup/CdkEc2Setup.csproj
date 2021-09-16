@@ -6,6 +6,12 @@
     <RollForward>Major</RollForward>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="CWUA_config.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="CWUA_config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="EC2_user_data_script.sh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -21,10 +27,5 @@
     <PackageReference Include="Amazon.CDK.AWS.AutoScaling" Version="1.122.0" />
     <PackageReference Include="Amazon.CDK.AWS.IAM" Version="1.122.0" />
     <PackageReference Include="Amazon.CDK.AWS.SSM" Version="1.122.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="CWUA_config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>
