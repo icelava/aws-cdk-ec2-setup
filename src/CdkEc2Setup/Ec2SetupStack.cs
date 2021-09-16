@@ -26,6 +26,7 @@ namespace CdkEc2Setup
 		private SecurityGroup prviWebSG;
 		private string prviWebSGName = "cdk_ec2_web_priv_sg";
 
+		private string webServerGroupName = "AutoScalingWebServers";
 		private string sshKey = "ec2_exps";
 		private string ec2RoleName = "cdk_ec2_role";
 		private Role ec2InstanceRole;
@@ -67,7 +68,7 @@ namespace CdkEc2Setup
 			var elbRouteTable = new CfnRouteTable(vpc, customRtName,
 			new CfnRouteTableProps
 			{
-				VpcId = this.vpc.VpcId,
+				VpcId = this.vpc.VpcId
 			});
 			elbRouteTable.Node.AddDependency(vpc.PublicSubnets);
 			elbRouteTable.Node.AddDependency(vpc.IsolatedSubnets);
@@ -363,25 +364,38 @@ namespace CdkEc2Setup
 			return this.LoadTextFile("EC2_user_data_script.sh", "User Data script file for EC2 Launch Configuration");
 		}
 
-		private void EstablishWebAsg()
+		private LaunchTemplate EstablishWebLaunchTemplate()
 		{
-			var userDataScript = this.LoadUserDataScript();
-			var asgName = "AutoScalingWebServers";
-			this.webServersAsg = new AutoScalingGroup(this, asgName, new AutoScalingGroupProps
+			var userData = UserData.ForLinux();
+			userData.AddCommands(this.LoadUserDataScript());
+
+			var lt = new LaunchTemplate(this, this.webServerGroupName + "Template", new LaunchTemplateProps
 			{
-				AutoScalingGroupName = asgName,
-				Vpc = this.vpc,
-				VpcSubnets = new SubnetSelection { SubnetGroupName = this.privateWebSubnetName },
-				AssociatePublicIpAddress = true,
-				SecurityGroup = this.prviWebSG,
+				LaunchTemplateName = this.webServerGroupName,
 				InstanceType = InstanceType.Of(InstanceClass.BURSTABLE2, InstanceSize.MICRO),
 				MachineImage = new AmazonLinuxImage
 				 (new AmazonLinuxImageProps
 				 {
 					 Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
 				 }),
+				SecurityGroup = this.prviWebSG,
 				KeyName = sshKey,
 				Role = this.ec2InstanceRole,
+				UserData = userData
+			});
+
+			return lt;
+		}
+		private void EstablishWebAsg()
+		{
+			var groupName = this.webServerGroupName + "Group";
+			var launchTemplate = this.EstablishWebLaunchTemplate();
+			this.webServersAsg = new AutoScalingGroup(this, groupName, new AutoScalingGroupProps
+			{
+				AutoScalingGroupName = groupName,
+				Vpc = this.vpc,
+				VpcSubnets = new SubnetSelection { SubnetGroupName = this.privateWebSubnetName },
+				AssociatePublicIpAddress = true,
 				DesiredCapacity = 1,
 				MinCapacity = 1,
 				MaxCapacity = 3,
@@ -389,9 +403,39 @@ namespace CdkEc2Setup
 				{
 					MinInstancesInService = 1,
 					MaxBatchSize = 2
-				})
+				}),
+
+				// Mandatory parameters for ASG but redundant since LaunchTemplate has them.
+				InstanceType = InstanceType.Of(InstanceClass.BURSTABLE2, InstanceSize.MICRO),
+				MachineImage = new AmazonLinuxImage
+				 (new AmazonLinuxImageProps
+				 {
+					 Generation = AmazonLinuxGeneration.AMAZON_LINUX_2
+				 }),
+
+				// These must remain otherwise the ASG creates its own set of SG and role.
+				SecurityGroup = this.prviWebSG,
+				Role = this.ec2InstanceRole
 			});
-			this.webServersAsg.AddUserData(userDataScript);
+
+			// CDK level-2 construct still does NOT support directly adding LaunchTemplate.
+			// Add via level-1 Cfn construct.
+			var cfnAsg = (CfnAutoScalingGroup)this.webServersAsg.Node.DefaultChild;
+
+			// Get rid of the lingering LaunchConfiguration.
+			cfnAsg.LaunchConfigurationName = null;
+			this.webServersAsg.Node.TryRemoveChild("LaunchConfig");
+			
+			cfnAsg.LaunchTemplate = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty()
+			{
+				LaunchTemplateName = launchTemplate.LaunchTemplateName,
+				LaunchTemplateId = launchTemplate.LaunchTemplateId,
+				Version = launchTemplate.DefaultVersionNumber
+			};
+
+
+			// Launch configuration style; superceded by Launch template.
+			//this.webServersAsg.AddUserData(this.LoadUserDataScript());
 		}
 
 		private void EstablishWebElb()
