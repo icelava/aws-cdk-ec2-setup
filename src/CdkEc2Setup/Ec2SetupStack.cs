@@ -9,7 +9,7 @@ using System.IO;
 
 
 
-namespace Ec2Setup
+namespace CdkEc2Setup
 {
 	public class Ec2SetupStack : Stack
 	{

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Ec2Setup
+namespace CdkEc2Setup
 {
     sealed class Program
     {
