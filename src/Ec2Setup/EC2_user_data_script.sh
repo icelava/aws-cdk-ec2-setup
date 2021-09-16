@@ -5,9 +5,10 @@ yum install httpd -y
 systemctl start httpd.service
 systemctl enable httpd
 
-# Amazon Linux 1 style
-# service httpd start
-# chkconfig httpd on
+# Ubuntu style 
+# apt update
+# apt install apache2 -y
+# systemctl enable apache2
 
 
 AZ_ID=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone/)
