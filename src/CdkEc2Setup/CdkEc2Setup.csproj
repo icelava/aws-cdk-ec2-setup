@@ -9,14 +9,6 @@
     <None Remove="CWUA_config.json" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="CustomScripts\CWUA_config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="CustomScripts\EC2_user_data_script.sh">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <!-- CDK Construct Library dependencies -->
     <PackageReference Include="Amazon.CDK" Version="1.122.0" />
     <!-- jsii Roslyn analyzers (un-comment to obtain compile-time checks for missing required props
@@ -27,5 +19,16 @@
     <PackageReference Include="Amazon.CDK.AWS.AutoScaling" Version="1.122.0" />
     <PackageReference Include="Amazon.CDK.AWS.IAM" Version="1.122.0" />
     <PackageReference Include="Amazon.CDK.AWS.SSM" Version="1.122.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="CustomScripts\CWUA_config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="CustomScripts\CWUA_install_AL2.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="CustomScripts\EC2_user_data_script.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

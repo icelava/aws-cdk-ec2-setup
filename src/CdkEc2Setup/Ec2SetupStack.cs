@@ -31,6 +31,7 @@ namespace CdkEc2Setup
 		private string ec2RoleName = "cdk_ec2_role";
 		private Role ec2InstanceRole;
 
+		private string cwuaConfigSsmParameterName = "AmazonCloudWatch-cdk-ec2-demo-config";
 		private StringParameter cwuaConfigParameter;
 		private AutoScalingGroup webServersAsg;
 
@@ -342,9 +343,9 @@ namespace CdkEc2Setup
 		{
 			var cwuaConfig = this.LoadTextFile("CWUA_config.json", "CloudWatch Unified Agent configuration");
 			// CWUA config files in SSM Parameter store must begin as "AmazonCloudWatch-".
-			this.cwuaConfigParameter = new StringParameter(this, "AmazonCloudWatch-cdk-ec2-demo-config", new StringParameterProps
+			this.cwuaConfigParameter = new StringParameter(this, this.cwuaConfigSsmParameterName, new StringParameterProps
 			{
-				ParameterName = "AmazonCloudWatch-cdk-ec2-demo-config",
+				ParameterName = this.cwuaConfigSsmParameterName,
 				SimpleName = true,
 				Description = "Trimmed configuration to report memory usage.",
 				StringValue = string.Join("\n", cwuaConfig),
@@ -360,15 +361,18 @@ namespace CdkEc2Setup
 			this.EstablishWebElb();
 		}
 
-		private string[] LoadUserDataScript()
+		private UserData LoadUserDataScript()
 		{
-			return this.LoadTextFile("EC2_user_data_script.sh", "User Data script file for EC2 Launch Configuration");
+			var userData = UserData.ForLinux();
+			userData.AddCommands(this.LoadTextFile("EC2_user_data_script.sh", "User Data script file for EC2 initialisation"));
+			userData.AddCommands(this.LoadTextFile("CWUA_install_AL2.sh", "CloudWatch Unified Agent installation script file"));
+			return userData;
 		}
 
 		private LaunchTemplate EstablishWebLaunchTemplate()
 		{
-			var userData = UserData.ForLinux();
-			userData.AddCommands(this.LoadUserDataScript());
+			var userData = this.LoadUserDataScript();
+			
 
 			var lt = new LaunchTemplate(this, this.webServerGroupName + "Template", new LaunchTemplateProps
 			{
