@@ -6,8 +6,7 @@ using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.SSM;
 using System;
 using System.IO;
-
-
+using System.Text.RegularExpressions;
 
 namespace CdkEc2Setup
 {
@@ -365,7 +364,12 @@ namespace CdkEc2Setup
 		{
 			var userData = UserData.ForLinux();
 			userData.AddCommands(this.LoadTextFile("EC2_user_data_script.sh", "User Data script file for EC2 initialisation"));
-			userData.AddCommands(this.LoadTextFile("CWUA_install_AL2.sh", "CloudWatch Unified Agent installation script file"));
+			var cwuaScript = this.LoadTextFile("CWUA_install_AL2.sh", "CloudWatch Unified Agent installation script file");
+			for (var line = 0; line < cwuaScript.Length; line++)
+			{
+				cwuaScript[line] = Regex.Replace(cwuaScript[line], "{ssmParameterName}", this.cwuaConfigSsmParameterName);
+			}
+			userData.AddCommands(cwuaScript);
 			return userData;
 		}
 
