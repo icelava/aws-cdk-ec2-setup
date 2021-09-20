@@ -31,6 +31,7 @@ namespace CdkEc2Setup
 		private string ec2RoleName = "cdk_ec2_role";
 		private Role ec2InstanceRole;
 
+		private StringParameter cwuaConfigParameter;
 		private AutoScalingGroup webServersAsg;
 
 		internal Ec2SetupStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
@@ -341,7 +342,7 @@ namespace CdkEc2Setup
 		{
 			var cwuaConfig = this.LoadTextFile("CWUA_config.json", "CloudWatch Unified Agent configuration");
 			// CWUA config files in SSM Parameter store must begin as "AmazonCloudWatch-".
-			var ssmParam = new StringParameter(this, "AmazonCloudWatch-cdk-ec2-demo-config", new StringParameterProps
+			this.cwuaConfigParameter = new StringParameter(this, "AmazonCloudWatch-cdk-ec2-demo-config", new StringParameterProps
 			{
 				ParameterName = "AmazonCloudWatch-cdk-ec2-demo-config",
 				SimpleName = true,
@@ -350,7 +351,7 @@ namespace CdkEc2Setup
 				Tier = ParameterTier.STANDARD
 			});
 
-			ssmParam.GrantRead(this.ec2InstanceRole);
+			this.cwuaConfigParameter.GrantRead(this.ec2InstanceRole);
 		}
 
 		private void EstablishEC2()
@@ -383,6 +384,10 @@ namespace CdkEc2Setup
 				Role = this.ec2InstanceRole,
 				UserData = userData
 			});
+
+			// User data script needs to reference SSM parameter for CWUA config file,
+			// so ensure SSM parameter gets defined first before launch template.
+			lt.Node.AddDependency(this.cwuaConfigParameter);
 
 			return lt;
 		}
