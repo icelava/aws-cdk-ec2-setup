@@ -405,7 +405,7 @@ namespace CdkEc2Setup
 				Vpc = this.vpc,
 				VpcSubnets = new SubnetSelection { SubnetGroupName = this.privateWebSubnetName },
 				AssociatePublicIpAddress = true,
-				DesiredCapacity = 1,
+				DesiredCapacity = 2,
 				MinCapacity = 1,
 				MaxCapacity = 3,
 				UpdatePolicy = UpdatePolicy.RollingUpdate(new RollingUpdateOptions
