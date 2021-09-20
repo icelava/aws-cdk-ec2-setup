@@ -4,12 +4,13 @@
 		"run_as_user": "root"
 	},
 	"metrics": {
+		"namespace": "CdkEc2Setup",
 		"append_dimensions": {
 			"AutoScalingGroupName": "${aws:AutoScalingGroupName}",
-			"ImageId": "${aws:ImageId}",
 			"InstanceId": "${aws:InstanceId}",
 			"InstanceType": "${aws:InstanceType}"
 		},
+		"aggregation_dimensions": [ [ "AutoScalingGroupName" ] ],
 		"metrics_collected": {
 			"mem": {
 				"measurement": [
