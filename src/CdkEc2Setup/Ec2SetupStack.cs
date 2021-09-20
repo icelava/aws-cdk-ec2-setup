@@ -317,7 +317,7 @@ namespace CdkEc2Setup
 
 		private string[] LoadTextFile (string fileName, string fileDescription)
 		{
-			var filetPath = AppDomain.CurrentDomain.BaseDirectory + "/" + fileName;
+			var filetPath = AppDomain.CurrentDomain.BaseDirectory + "/CustomScripts/" + fileName;
 			if (!File.Exists(filetPath))
 			{
 				throw new FileNotFoundException(fileDescription + " not found in output directory: " + filetPath);

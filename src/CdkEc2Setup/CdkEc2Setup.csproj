@@ -9,10 +9,10 @@
     <None Remove="CWUA_config.json" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="CWUA_config.json">
+    <Content Include="CustomScripts\CWUA_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="EC2_user_data_script.sh">
+    <Content Include="CustomScripts\EC2_user_data_script.sh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
