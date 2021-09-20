@@ -367,7 +367,8 @@ namespace CdkEc2Setup
 			var cwuaScript = this.LoadTextFile("CWUA_install_AL2.sh", "CloudWatch Unified Agent installation script file");
 			for (var line = 0; line < cwuaScript.Length; line++)
 			{
-				cwuaScript[line] = Regex.Replace(cwuaScript[line], "{ssmParameterName}", this.cwuaConfigSsmParameterName);
+				if (Regex.IsMatch(cwuaScript[line], @"\{ssmParameterName\}"))
+					cwuaScript[line] = Regex.Replace(cwuaScript[line], "{ssmParameterName}", this.cwuaConfigSsmParameterName);
 			}
 			userData.AddCommands(cwuaScript);
 			return userData;
