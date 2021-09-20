@@ -435,6 +435,12 @@ namespace CdkEc2Setup
 			cfnAsg.LaunchConfigurationName = null;
 			this.webServersAsg.Node.TryRemoveChild("LaunchConfig");
 			
+			// NOTE
+			// CDK LaunchTemplate does not support the use of $Default or $Latest for the version to use;
+			// it ends up being an explicit number after CloudFormation is done creating it.
+			// Have to manually adjust later in web console to Default or Latest as desired.
+			// Similarly the ASG's launch template reference will also be to an explicit number version;
+			// also need to adjust it in web console to Default or Latest.
 			cfnAsg.LaunchTemplate = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty()
 			{
 				LaunchTemplateName = launchTemplate.LaunchTemplateName,
