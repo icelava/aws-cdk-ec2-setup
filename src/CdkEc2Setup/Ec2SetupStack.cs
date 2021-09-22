@@ -1,10 +1,13 @@
 using Amazon.CDK;
 using Amazon.CDK.AWS.AutoScaling;
+using Amazon.CDK.AWS.CloudWatch;
+using Amazon.CDK.AWS.CloudWatch.Actions;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.ElasticLoadBalancingV2;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.SSM;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -30,6 +33,7 @@ namespace CdkEc2Setup
 		private string ec2RoleName = "cdk_ec2_role";
 		private Role ec2InstanceRole;
 
+		private string metricNamespace = "CdkEc2Setup";
 		private string cwuaConfigSsmParameterName = "AmazonCloudWatch-cdk-ec2-demo-config";
 		private StringParameter cwuaConfigParameter;
 		private AutoScalingGroup webServersAsg;
@@ -358,6 +362,7 @@ namespace CdkEc2Setup
 		{
 			this.EstablishWebAsg();
 			this.EstablishWebElb();
+			this.EstablishCloudWatch();
 		}
 
 		private UserData LoadUserDataScript()
@@ -486,6 +491,36 @@ namespace CdkEc2Setup
 					Path = "/index.html",
 					Interval = Duration.Minutes(2)
 				}
+			});
+		}
+
+		private void EstablishCloudWatch()
+		{
+			this.EstablishMetricAlarms();
+		}
+
+		private void EstablishMetricAlarms()
+		{
+			// Create alarm based on ASG instances' max memory usage - alert for request overload or memory leak.
+			var memMetric = new Metric(new MetricProps {
+				Namespace = this.metricNamespace,
+				MetricName = "mem_used_percent",
+				DimensionsMap = new Dictionary<string, string> { { "AutoScalingGroupName", this.webServersAsg.AutoScalingGroupName } },
+				Period = Duration.Minutes(1),
+				Statistic = "Maximum",
+				Unit = Unit.PERCENT
+			});
+
+			var alarmName = "CdkEc2Setup_HighMemoryUsage";
+			var memAlarm = memMetric.CreateAlarm(this, alarmName, new CreateAlarmOptions
+			{
+				AlarmName = alarmName,
+				AlarmDescription = "High memory usage detected.",
+				Threshold = 75,
+				ComparisonOperator = ComparisonOperator.GREATER_THAN_THRESHOLD,
+				EvaluationPeriods = 3,
+				DatapointsToAlarm = 3,
+				TreatMissingData = TreatMissingData.MISSING
 			});
 		}
 	}
