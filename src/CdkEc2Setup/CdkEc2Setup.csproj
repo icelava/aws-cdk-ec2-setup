@@ -20,6 +20,8 @@
     <PackageReference Include="Amazon.CDK.AWS.ElasticLoadBalancingV2" Version="1.124.0" />
     <PackageReference Include="Amazon.CDK.AWS.AutoScaling" Version="1.124.0" />
     <PackageReference Include="Amazon.CDK.AWS.IAM" Version="1.124.0" />
+    <PackageReference Include="Amazon.CDK.AWS.SNS" Version="1.124.0" />
+    <PackageReference Include="Amazon.CDK.AWS.SNS.Subscriptions" Version="1.124.0" />
     <PackageReference Include="Amazon.CDK.AWS.SSM" Version="1.124.0" />
   </ItemGroup>
   <ItemGroup>
