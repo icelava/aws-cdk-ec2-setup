@@ -5,6 +5,8 @@ using Amazon.CDK.AWS.CloudWatch.Actions;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.ElasticLoadBalancingV2;
 using Amazon.CDK.AWS.IAM;
+using Amazon.CDK.AWS.SNS;
+using Amazon.CDK.AWS.SNS.Subscriptions;
 using Amazon.CDK.AWS.SSM;
 using System;
 using System.Collections.Generic;
@@ -37,6 +39,8 @@ namespace CdkEc2Setup
 		private string cwuaConfigSsmParameterName = "AmazonCloudWatch-cdk-ec2-demo-config";
 		private StringParameter cwuaConfigParameter;
 		private AutoScalingGroup webServersAsg;
+
+		private string[] notificationOperators = new string[] { "icelava@gmail.com" };
 
 		internal Ec2SetupStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
 		{
@@ -501,6 +505,17 @@ namespace CdkEc2Setup
 
 		private void EstablishMetricAlarms()
 		{
+			var alarmId = "CdkEc2Setup_HighMemoryUsage";
+			var alarmNote = "CdkEc2Setup high memory usage detected.";
+
+			var notifyTopic = new Topic(this, alarmId + "Topic", new TopicProps
+			{
+				TopicName = alarmId,
+				DisplayName = alarmNote
+			});
+			foreach (var emailAddr in notificationOperators)
+				notifyTopic.AddSubscription(new EmailSubscription(emailAddr));
+
 			// Create alarm based on ASG instances' max memory usage - alert for request overload or memory leak.
 			var memMetric = new Metric(new MetricProps {
 				Namespace = this.metricNamespace,
@@ -511,17 +526,19 @@ namespace CdkEc2Setup
 				Unit = Unit.PERCENT
 			});
 
-			var alarmName = "CdkEc2Setup_HighMemoryUsage";
-			var memAlarm = memMetric.CreateAlarm(this, alarmName, new CreateAlarmOptions
+
+			var memAlarm = memMetric.CreateAlarm(this, alarmId + "Alarm", new CreateAlarmOptions
 			{
-				AlarmName = alarmName,
-				AlarmDescription = "High memory usage detected.",
+				AlarmName = alarmId,
+				AlarmDescription = alarmNote,
 				Threshold = 75,
 				ComparisonOperator = ComparisonOperator.GREATER_THAN_THRESHOLD,
 				EvaluationPeriods = 3,
 				DatapointsToAlarm = 3,
-				TreatMissingData = TreatMissingData.MISSING
+				TreatMissingData = TreatMissingData.MISSING,
+				ActionsEnabled = true
 			});
+			memAlarm.AddAlarmAction(new SnsAction(notifyTopic));
 		}
 	}
 }
